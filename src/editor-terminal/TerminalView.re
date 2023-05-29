@@ -90,12 +90,13 @@ let make =
         Skia.Paint.setAntiAlias(backgroundPaint, false);
 
         let textPaint = Skia.Paint.make();
+        let textFont = Skia.Font.make();
         let typeFace = Revery.Font.getSkiaTypeface(font);
-        Skia.Paint.setTypeface(textPaint, typeFace);
-        Skia.Paint.setTextSize(textPaint, fontSize);
-        Revery.Font.Smoothing.setPaint(~smoothing, textPaint);
+        Skia.Font.setTypeface(textFont, typeFace);
+        Skia.Font.setSize(textFont, fontSize);
+        Revery.Font.Smoothing.setPaint(~smoothing, textFont, textPaint);
 
-        Skia.Paint.setLcdRenderText(textPaint, true);
+        // Skia.Paint.setLcdRenderText(textPaint, true);
 
         let lineSpacingOffset =
           max(0., (lineHeight -. characterHeight) /. 2.);
@@ -132,8 +133,8 @@ let make =
            Accumulator.flush(accumulator^)};
 
         let renderText = (row, yOffset) =>
-          {Skia.Paint.setTextEncoding(textPaint, GlyphId);
-           let accumulator =
+          {
+            let accumulator =
              ref(
                TextAccumulator.create((startColumn, buffer, color) => {
                  Skia.Paint.setColor(textPaint, color);
@@ -145,12 +146,13 @@ let make =
                    |> Revery.Font.ShapeResult.getGlyphStrings;
                  List.iter(
                    ((skiaFace, str)) => {
-                     Skia.Paint.setTypeface(textPaint, skiaFace);
+                     Skia.Font.setTypeface(textFont, skiaFace);
 
                      CanvasContext.drawText(
                        ~paint=textPaint,
                        ~x=float(startColumn) *. characterWidth,
                        ~y=yOffset +. characterHeight +. lineSpacingOffset,
+                       ~font=textFont,
                        ~text=str,
                        canvasContext,
                      );

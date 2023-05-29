@@ -3,6 +3,7 @@ open Revery;
 
 type t = {
   paint: Skia.Paint.t,
+  font: Skia.Font.t,
   features: list(Harfbuzz.feature),
   loadedFont: Revery.Font.FontCache.t,
   asciiTable: array(float),
@@ -32,29 +33,31 @@ let create =
   let typeface = Revery.Font.getSkiaTypeface(loadedFont);
 
   let paint = Skia.Paint.make();
-  Skia.Paint.setTextSize(paint, fontSize);
-  Skia.Paint.setLcdRenderText(paint, true);
-  Skia.Paint.setTypeface(paint, typeface);
-  Revery.Font.Smoothing.setPaint(~smoothing, paint);
+  let font = Skia.Font.make();
+  Skia.Font.setSize(font, fontSize);
+  //Skia.Paint.setLcdRenderText(paint, true);
+  Skia.Font.setTypeface(font, typeface);
+  Revery.Font.Smoothing.setPaint(~smoothing, font, paint);
 
   // Pre-load the ASCII measurements - save on shaping costs
-  Skia.Paint.setTextEncoding(paint, Utf8);
+  //Skia.Paint.setTextEncoding(paint, Utf8);
   let asciiTable =
     Array.init(
       256,
       idx => {
         let str = Uchar.of_int(idx) |> Zed_utf8.make(1);
 
-        Skia.Paint.measureText(paint, str, None);
+        Skia.Font.measureText(~paint=paint, ~encoding=Utf8, font, str, ());
       },
     );
 
   let utf8Table = Hashtbl.create(256);
 
-  Skia.Paint.setTextEncoding(paint, GlyphId);
+  // Skia.Paint.setTextEncoding(paint, GlyphId);
 
   {
     paint,
+    font,
     features,
     loadedFont,
 
@@ -84,8 +87,8 @@ let measure = (uchar, cache) => {
         glyphStrings
         |> List.fold_left(
              (acc, (typeface, glyphString)) => {
-               Skia.Paint.setTypeface(cache.paint, typeface);
-               acc +. Skia.Paint.measureText(cache.paint, glyphString, None);
+               Skia.Font.setTypeface(cache.font, typeface);
+               acc +. Skia.Font.measureText(~paint=cache.paint, cache.font, glyphString, ());
              },
              0.,
            );

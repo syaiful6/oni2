@@ -133,15 +133,16 @@ let drawSquiggly = {
 
 let rect = drawRect;
 
-let drawText = (~context, ~x, ~y, ~paint, text) =>
-  CanvasContext.drawText(~x, ~y, ~paint, ~text, context.canvasContext);
+let drawText = (~context, ~x, ~y, ~paint, ~font, text) =>
+  CanvasContext.drawText(~x, ~y, ~paint, ~font, ~text, context.canvasContext);
 let text = drawText;
 
 let drawShapedText = {
   let paint = Skia.Paint.make();
-  Skia.Paint.setTextEncoding(paint, GlyphId);
+  let textFont = Skia.Font.make();
+  // Skia.Paint.setTextEncoding(paint, GlyphId);
 
-  Skia.Paint.setLcdRenderText(paint, true);
+  // Skia.Paint.setLcdRenderText(paint, true);
 
   (~context, ~x, ~y, ~color, ~bold, ~italic, text) => {
     let font =
@@ -156,19 +157,19 @@ let drawShapedText = {
         |> ShapeResult.getGlyphStrings
       );
 
-    Revery.Font.Smoothing.setPaint(~smoothing=context.smoothing, paint);
-    Skia.Paint.setTextSize(paint, context.fontSize);
+    Revery.Font.Smoothing.setPaint(~smoothing=context.smoothing, textFont, paint);
+    Skia.Font.setSize(textFont, context.fontSize);
     Skia.Paint.setColor(paint, Revery.Color.toSkia(color));
 
     let offset = ref(x);
 
     text
     |> List.iter(((skiaFace, str)) => {
-         Skia.Paint.setTypeface(paint, skiaFace);
+         Skia.Font.setTypeface(textFont, skiaFace);
 
-         drawText(~context, ~x=offset^, ~y, ~paint, str);
+         drawText(~context, ~x=offset^, ~y, ~paint, ~font=textFont, str);
 
-         offset := offset^ +. Skia.Paint.measureText(paint, str, None);
+         offset := offset^ +. Skia.Font.measureText(~paint, textFont, str, ());
        });
   };
 };
@@ -177,9 +178,10 @@ let shapedText = drawShapedText;
 
 let drawUtf8Text = {
   let paint = Skia.Paint.make();
-  Skia.Paint.setTextEncoding(paint, Utf8);
+  let textFont = Skia.Font.make();
+  // Skia.Paint.setTextEncoding(paint, Utf8);
 
-  Skia.Paint.setLcdRenderText(paint, true);
+  // Skia.Paint.setLcdRenderText(paint, true);
 
   (~context, ~x, ~y, ~color, ~bold, ~italic, ~text) => {
     let font =
@@ -188,12 +190,12 @@ let drawUtf8Text = {
         bold ? Oni_Core.Font.bolder(context.fontWeight) : context.fontWeight,
         context.fontFamily,
       );
-    Revery.Font.Smoothing.setPaint(~smoothing=context.smoothing, paint);
-    Skia.Paint.setTextSize(paint, context.fontSize);
-    Skia.Paint.setTypeface(paint, Revery.Font.getSkiaTypeface(font));
+    Revery.Font.Smoothing.setPaint(~smoothing=context.smoothing, textFont, paint);
+    Skia.Font.setSize(textFont, context.fontSize);
+    Skia.Font.setTypeface(textFont, Revery.Font.getSkiaTypeface(font));
     Skia.Paint.setColor(paint, Revery.Color.toSkia(color));
 
-    drawText(~context, ~x, ~y, ~paint, text);
+    CanvasContext.drawTextWithEncoding(~encoding=Utf8, ~x, ~y, ~paint, ~text, ~font=textFont, context.canvasContext);
   };
 };
 let utf8Text = drawUtf8Text;
@@ -347,11 +349,12 @@ let rangeByte =
 };
 
 let tabPaint = Skia.Paint.make();
-Skia.Paint.setTextEncoding(tabPaint, GlyphId);
-Skia.Paint.setLcdRenderText(tabPaint, true);
+let tabFont = Skia.Font.make();
+// Skia.Paint.setTextEncoding(tabPaint, GlyphId);
+// Skia.Paint.setLcdRenderText(tabPaint, true);
 Skia.Paint.setAntiAlias(tabPaint, true);
-Skia.Paint.setTextSize(tabPaint, 10.);
-Skia.Paint.setTextEncoding(tabPaint, Utf8);
+Skia.Font.setSize(tabFont, 10.);
+// Skia.Paint.setTextEncoding(tabPaint, Utf8);
 
 let token =
     (~context, ~offsetY, ~colors: Colors.t, token: BufferViewTokenizer.t) => {
@@ -392,9 +395,11 @@ let token =
     |> Revery.Font.load
     |> Result.get_ok
     |> Revery.Font.getSkiaTypeface
-    |> Skia.Paint.setTypeface(tabPaint);
-    CanvasContext.drawText(
+    |> Skia.Font.setTypeface(tabFont);
+    CanvasContext.drawTextWithEncoding(
+      ~encoding=Utf8,
       ~paint=tabPaint,
+      ~font=tabFont,
       ~x=x +. context.charWidth /. 4.,
       ~y,
       ~text=FontIcon.codeToIcon(FontAwesome.longArrowAltRight),

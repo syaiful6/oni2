@@ -4,7 +4,7 @@ authors: [ "whitequark <whitequark@whitequark.org>" ]
 license: "MIT"
 homepage: "https://github.com/ocaml-ppx/ppx_deriving_yojson"
 bug-reports: "https://github.com/ocaml-ppx/ppx_deriving_yojson/issues"
-dev-repo: "git://github.com/ocaml-ppx/ppx_deriving_yojson.git"
+dev-repo: "git+https://github.com/ocaml-ppx/ppx_deriving_yojson.git"
 tags: [ "syntax" "json" ]
 build: [
   ["dune" "subst"] {dev}
@@ -13,7 +13,7 @@ build: [
 ]
 depends: [
   "ocaml" {>= "4.04.0"}
-  "yojson" {>= "1.6.0" & < "2.0.0"}
+  "yojson" {>= "1.6.0"}
   "result"
   "ppx_deriving" {>= "4.5" & < "5.0"}
   "ppx_tools"
